@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Birthday Protocol</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="terminal">
+        <div id="history"></div>
+        <div id="command-line-container">
+            <span id="prompt">[agent@local ~]$</span>
+            <input type="text" id="command-input" autofocus>
+        </div>
+    </div>
+    
+    <!-- 你的故事剧本 -->
+    <script src="gameData.js"></script> 
+    <!-- 游戏引擎 -->
+    <script src="script.js"></script>
+</body>
+</html>

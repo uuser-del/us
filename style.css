@@ -1,0 +1,65 @@
+body {
+    background-color: #0d0d0d;
+    color: #00ff41;
+    font-family: 'Fira Code', monospace;
+    font-size: 16px;
+    margin: 0;
+}
+
+#terminal {
+    padding: 15px;
+    height: calc(100vh - 30px);
+    overflow-y: scroll;
+    box-sizing: border-box;
+    cursor: text;
+}
+
+#history {
+    white-space: pre-wrap; /* Allows text to wrap, preserves whitespace */
+    word-wrap: break-word; /* Breaks long words */
+}
+
+#command-line-container {
+    display: flex;
+}
+
+#prompt {
+    margin-right: 8px;
+    white-space: nowrap; /* Prevent prompt from wrapping */
+}
+
+#command-input {
+    background-color: transparent;
+    border: none;
+    color: #00ff41;
+    font-family: 'Fira Code', monospace;
+    font-size: 16px;
+    flex-grow: 1;
+    padding: 0;
+}
+
+#command-input:focus {
+    outline: none;
+}
+
+/* Blinking cursor effect */
+#command-input:focus + .cursor {
+    animation: blink 1s step-end infinite;
+}
+
+.cursor-container {
+    display: inline-block;
+}
+
+/* Custom styling for different types of output */
+.output-command {
+    color: #87ceeb; /* Light sky blue for user commands */
+}
+
+.output-error {
+    color: #ff4757; /* Red for errors */
+}
+
+.output-system {
+    color: #f1c40f; /* Yellow for system messages */
+}
