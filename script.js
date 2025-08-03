@@ -1,6 +1,5 @@
 // ================================================================== //
-//  GAME ENGINE v4 - "最终版"
-//  支持多谜题类型，包含增强引导和验证系统
+//  GAME ENGINE v9.0 - "最终安可版"
 // ================================================================== //
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -10,21 +9,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const prompt = document.getElementById('prompt');
 
     let commandHistory = [], historyIndex = -1, currentPuzzleIndex = 0;
-    let cwd, cwdPath = [], verifiedFacts = new Set();
-    let finalPuzzleFailCount = 0, hintRequestCount = 0;
+    let cwd, cwdPath = [], gameState = 'playing'; // 'playing', 'shutdown', 'encore'
 
     function print(message, className) {
         const p = document.createElement('p');
         p.innerHTML = message.replace(/\n/g, '<br>');
         if (className) p.className = className;
         history.appendChild(p);
+        terminal.scrollTop = terminal.scrollHeight;
     }
 
     function updatePrompt() {
         const puzzle = currentPuzzle();
         let path = '';
-        if (puzzle.type === 'filesystem' || puzzle.type === 'verification') {
+        if (puzzle && puzzle.type === 'filesystem') {
             path = ` ~/${cwdPath.slice(1).join('/')}`;
+        } else if (puzzle && puzzle.id === 'genesis_protocol') {
+            path = ' /';
         }
         prompt.textContent = `[agent@local${path}]$`;
     }
@@ -36,8 +37,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function currentPuzzle() {
         return gameData.puzzles[currentPuzzleIndex];
     }
+    
+    function findPuzzleById(id) {
+        return gameData.puzzles.find(p => p.id === id);
+    }
 
     function advanceToNextPuzzle() {
+        if(currentPuzzle().isDynamic) {
+            winGame();
+            return;
+        }
         currentPuzzleIndex++;
         if (currentPuzzleIndex < gameData.puzzles.length) {
             startPuzzle(currentPuzzle());
@@ -46,39 +55,60 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function winGame() {
+    async function winGame() {
         history.innerHTML = '';
         print(gameData.finalReward.art);
+        await sleep(500);
         print(gameData.finalReward.message, 'output-system');
+        await sleep(1000);
+        print(gameData.finalReward.closingSequence, 'output-system');
         commandInput.disabled = true;
         prompt.style.display = 'none';
+        
+        // Encore sequence
+        await sleep(3000);
+        gameState = 'encore';
+        print(gameData.encore.prompt, 'output-system');
+        commandInput.disabled = false;
+        prompt.textContent = '>';
+        prompt.style.display = 'inline';
+    }
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     function startPuzzle(puzzle) {
         if (puzzle.prompt) print(puzzle.prompt, 'output-system');
-        
-        if (puzzle.type === 'filesystem' || puzzle.type === 'verification') {
+        if (puzzle.type === 'filesystem') {
             const rootDirName = Object.keys(puzzle.fileSystem)[0];
             cwd = puzzle.fileSystem[rootDirName];
             cwdPath = [rootDirName];
         }
-
-        if (puzzle.type === 'verification') {
-            verifiedFacts.clear();
-        }
-        
-        finalPuzzleFailCount = 0;
-        hintRequestCount = 0;
         updatePrompt();
     }
 
     function handleCommand(command) {
+        if (gameState === 'encore') {
+            handleEncore(command);
+            return;
+        }
+
         printCommand(command);
         const [cmd, ...args] = command.trim().split(' ').filter(Boolean);
         const puzzle = currentPuzzle();
 
-        if (puzzle.type === 'special_command') {
-            handleFinalPuzzle(command);
+        if (puzzle.type === 'special_command_gate') {
+            if (command.toLowerCase() === puzzle.triggerCommand) {
+                print(puzzle.errorMessage, 'output-error');
+                const nextPuzzle = findPuzzleById(puzzle.nextPuzzleId);
+                if (nextPuzzle) {
+                    currentPuzzleIndex = gameData.puzzles.indexOf(nextPuzzle);
+                    startPuzzle(currentPuzzle());
+                }
+            } else {
+                print(`Error: command not found: ${command}`, 'output-error');
+            }
             return;
         }
 
@@ -86,72 +116,45 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'help': print(gameData.helpMessage); break;
             case 'clear': history.innerHTML = ''; break;
             case 'submit': handleSubmit(args.join(' ')); break;
-            case 'verify': handleVerify(args.join(' ')); break;
-            case 'ls': handleLs(); break;
+            case 'ls': handleLs(args[0]); break;
             case 'cat': handleCat(args.join(' ')); break;
             case 'cd': handleCd(args.join(' ')); break;
+            case 'initiate': if (args.join(' ') === 'world') handleCommand('initiate world'); else print(`Error: Unknown protocol '${args.join(' ')}'`, 'output-error'); break;
             case undefined: break;
             default: print(`Error: command not found: ${cmd}`, 'output-error');
         }
         updatePrompt();
     }
+    
+    function handleEncore(command) {
+        print(`> ${command}`, 'output-command');
+        if (command.toLowerCase() === gameData.encore.trigger) {
+            print(gameData.encore.log, 'output-system');
+        } else {
+            print("Command not recognized.", "output-error");
+        }
+        commandInput.disabled = true;
+        prompt.style.display = 'none';
+    }
 
     function handleSubmit(answer) {
         const puzzle = currentPuzzle();
-        if (puzzle.type !== 'filesystem' && puzzle.type !== 'simple_submit') {
-             print(`Error: 'submit' is not a valid command here.`, 'output-error');
-             return;
-        }
+        if (!puzzle.answer) { print(`Error: 'submit' is not a valid command here.`, 'output-error'); return; }
         if (answer.toLowerCase() === puzzle.answer.toLowerCase()) {
             if (puzzle.successMessage) print(puzzle.successMessage, 'output-system');
-            advanceToNextPuzzle();
+            if (puzzle.isDynamic) winGame(); else advanceToNextPuzzle();
         } else {
             if (puzzle.failMessage) print(puzzle.failMessage, 'output-error');
         }
     }
-
-    function handleVerify(filename) {
-        const puzzle = currentPuzzle();
-        if (puzzle.type !== 'verification') {
-            print(`Error: 'verify' is not a valid command here.`, 'output-error');
-            return;
-        }
-
-        if (!filename) { print('Usage: verify [filename]', 'output-system'); return; }
-        
-        const file = cwd.children[filename];
-        if (!file) {
-            print(`Error: No such file: ${filename}`, 'output-error');
-            return;
-        }
-
-        if (puzzle.factsToVerify.includes(filename)) {
-            if (verifiedFacts.has(filename)) {
-                print(`Fact '${filename}' already verified.`, 'output-system');
-            } else {
-                verifiedFacts.add(filename);
-                print(`Fact confirmed. Assimilating... [${verifiedFacts.size}/${puzzle.factsToVerify.length}]`, 'output-system');
-
-                if (verifiedFacts.size === puzzle.factsToVerify.length) {
-                    if (puzzle.successMessage) print(puzzle.successMessage, 'output-system');
-                    advanceToNextPuzzle();
-                }
-            }
-        } else {
-            if (puzzle.failMessage) print(puzzle.failMessage, 'output-error');
-        }
-    }
-
+    
     function checkFilesystemAccess() {
         const type = currentPuzzle().type;
-        if (type !== 'filesystem' && type !== 'verification') {
-            print('Error: Filesystem commands not available in this context.', 'output-error');
-            return false;
-        }
+        if (type !== 'filesystem') { print('Error: Filesystem commands not available in this context.', 'output-error'); return false; }
         return true;
     }
 
-    function handleLs() { if (checkFilesystemAccess()) print(Object.keys(cwd.children).map(key => cwd.children[key].type === 'dir' ? `${key}/` : key).join('\n')); }
+    function handleLs(arg) { if (checkFilesystemAccess()) { let showHidden = arg === '-a'; const children = cwd.children; const items = Object.keys(children).filter(key => showHidden || !key.startsWith('.')).map(key => children[key].type === 'dir' ? `${key}/` : key); print(items.join('\n')); }}
     function handleCat(filename) { if (checkFilesystemAccess()) { if (!filename) { print('Usage: cat [filename]', 'output-system'); return; } const file = cwd.children[filename]; if (file?.type === 'file') print(file.content); else print(`Error: No such file: ${filename}`, 'output-error'); }}
     function handleCd(dirname) {
         if (!checkFilesystemAccess()) return;
@@ -161,16 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let newCwd = currentPuzzle().fileSystem;
         cwdPath.forEach(p => newCwd = newCwd[p] ?? newCwd.children[p]);
         cwd = newCwd;
-    }
-
-    function handleFinalPuzzle(command) {
-        const puzzle = currentPuzzle();
-        const [cmd] = command.trim().split(' ');
-        if (command.toLowerCase() === puzzle.answer) { winGame(); return; }
-        if (cmd === 'request_hint') { hintRequestCount++; const hintKey = `request_hint_${hintRequestCount}`; print(puzzle.specialHints[hintKey] || "No more hints available.", 'output-system'); return; }
-        print(puzzle.specialHints[cmd] || `Command '${command}' not recognized in this context.`, 'output-error');
-        finalPuzzleFailCount++;
-        if (finalPuzzleFailCount === 3) print("\nSystem Integrity Check: You seem to be stuck. The 'request_hint' protocol is now available.", "output-system");
     }
 
     commandInput.addEventListener('keydown', (e) => {
