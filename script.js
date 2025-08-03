@@ -62,6 +62,10 @@ document.addEventListener('DOMContentLoaded', () => {
         print(gameData.finalReward.message, 'output-system');
         await sleep(1000);
         print(gameData.finalReward.closingSequence, 'output-system');
+        
+        // 保存进度到本地存储
+        saveProgress();
+        
         commandInput.disabled = true;
         prompt.style.display = 'none';
         
@@ -72,6 +76,39 @@ document.addEventListener('DOMContentLoaded', () => {
         commandInput.disabled = false;
         prompt.textContent = '>';
         prompt.style.display = 'inline';
+    }
+    
+    function saveProgress() {
+        const progress = {
+            completed: true,
+            completionDate: new Date().toISOString(),
+            trophyId: 'Trophy-2025.08.04',
+            agent: '小松鼠',
+            message: 'World brilliant for your birth.',
+            version: 'v9.1'
+        };
+        
+        try {
+            localStorage.setItem('birthday_protocol_progress', JSON.stringify(progress));
+            console.log('Progress saved to localStorage');
+        } catch (error) {
+            console.error('Failed to save progress:', error);
+        }
+    }
+    
+    function loadProgress() {
+        try {
+            const saved = localStorage.getItem('birthday_protocol_progress');
+            if (saved) {
+                const progress = JSON.parse(saved);
+                if (progress.completed) {
+                    return progress;
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load progress:', error);
+        }
+        return null;
     }
 
     function sleep(ms) {
@@ -177,6 +214,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     terminal.addEventListener('click', () => commandInput.focus());
+    
+    // 检查是否有已保存的进度
+    const savedProgress = loadProgress();
+    if (savedProgress) {
+        print(`[SYSTEM_RESTORE] 检测到已封存的进度记录。`);
+        print(`Trophy ID: ${savedProgress.trophyId}`);
+        print(`Agent: ${savedProgress.agent}`);
+        print(`Completion Date: ${new Date(savedProgress.completionDate).toLocaleString()}`);
+        print(`Message: "${savedProgress.message}"`);
+        print(`Version: ${savedProgress.version}`);
+        print(`\n[NOTE] 此会话已被永久封存。如需重新体验，请清除浏览器数据。`);
+        commandInput.disabled = true;
+        prompt.style.display = 'none';
+        return;
+    }
+    
     print(gameData.welcomeMessage);
     startPuzzle(currentPuzzle());
 });

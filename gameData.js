@@ -24,7 +24,7 @@ Available commands:
   initiate world - Execute the final protocol.
 `,
 
-    finalReward: {
+            finalReward: {
         art: `
       ******       ******
     **********   **********
@@ -98,20 +98,25 @@ Happy Birth.
             prompt: '`Phenomenon` 象限数据损坏。必须先修复此象限才能继续。',
             fileSystem: {
                 'phenomenon_quadrant': { type: 'dir', children: {
-                    'games': { type: 'dir', children: { 'battlefield_2': { type: 'dir', children: {} }, 'baldurs_gate_3': { type: 'dir', children: {} }, 'playtime_log.txt': { type: 'file', content: "LOG: Anchor memory location identified." } }},
+                    'games': { type: 'dir', children: { 
+                        'battlefield_2': { type: 'dir', children: {} },
+                        'minecraft': { type: 'dir', children: {} },
+                        'Dead_Cells': { type: 'dir', children: {} },
+                        'playtime_log.txt': { type: 'file', content: "LOG: Anchor memory location identified." }
+                    }},
                     'hobbies': { type: 'dir', children: { 'gene_editing.research': { type: 'file', content: 'Research notes on CRISPR-Cas9... fascinating.' }, 'idolmaster.log': { type: 'file', content: 'Observed targets: 斑鸠路加, 浅苍透, 若叶睦. Gift inquiry recorded: Nyamu\'s stage costume.' }, 'music': { type: 'dir', children: { 'playlists.log': { type: 'file', content: 'Frequent genres: Techno, Trance, Drum & Bass.' }}}}},
                     'books': { type: 'dir', children: { 'currently_reading.txt': { type: 'file', content: 'Subject is currently analyzing "Poor Charlie\'s Almanack", focusing on its lattice of mental models.' }}},
                     'media': { type: 'dir', children: { 'movies.log': { type: 'file', content: 'FIELD REPORT: Subject\'s preferred actors tracked. Top operatives include Al Pacino (highest priority), Ryan Gosling, Brad Pitt.' }, 'blade_runner.memo': { type: 'file', content: '...I\'ve seen things you people wouldn\'t believe... All those moments will be lost in time, like tears in rain...' }}},
                     'exterior': { type: 'dir', children: { 'geo_signature.scan': { type: 'file', content: "[地质扫描报告]\n在“后院”象限的表层土壤中，检测到多个非天然的有机金属混合构造体..." }}},
                     '.trophy_room': { type: 'dir', children: { 'specimen_archive.log': { type: 'file', content: "[机密样本存档]\n警告：访问受限。\n描述：在一个指定的展示区域，发现了一批被妥善保存的、乳胶基的聚合物薄膜样本..." }}},
-                    'calibration_log.txt': { type: 'file', content: "现象校准失败。需要一个“锚点记忆 (Anchor Memory)”来稳定数据流。\n分析显示，该记忆的代号与特工的“微信地区”设定高度相关。\n警告：该地区并非真实地理位置。\n请提交该记忆的代号。" },
+                    'calibration_log.txt': { type: 'file', content: "现象校准失败。需要一个“锚点记忆 (Anchor Memory)”来稳定数据流。\n请提交该记忆的代号。" },
                     'domestic_anomaly.log': { type: 'file', content: "[异常行为记录 001]\n观察对象：一次性调味品容器的仪式性陈列。\n地点：废弃物回收单元的顶部面板..." },
                     'psych_eval.log': { type: 'file', content: "特工表现出在任何场合进行高强度思辨对话的倾向，即使是在上海迪士尼乐园的队列中。评估：此行为模式极度稳定。" }
                 }}
             },
             answer: 'battlefield_2',
             successMessage: "记忆锚点 'battlefield_2' 已接受。现象象限校准成功。欢迎进入矩阵，特工：小松鼠。",
-            failMessage: "锚点记忆不匹配。校准失败。"
+            failMessage: "锚点记忆不匹配。校准失败。",
         },
         {
             id: 'praxis_calibration',
